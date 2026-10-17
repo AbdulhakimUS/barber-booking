@@ -1,3 +1,4 @@
+import ws from 'ws'
 import { createClient } from '@supabase/supabase-js'
 
 const url = process.env.SUPABASE_URL
@@ -9,11 +10,11 @@ if (!url || !serviceKey) {
 }
 
 export const db = url && serviceKey
-  ? createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+  ? createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false }, realtime: { transport: ws } })
   : null
 
 export const authPublic = url && anonKey
-  ? createClient(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false } })
+  ? createClient(url, anonKey, { auth: { autoRefreshToken: false, persistSession: false }, realtime: { transport: ws } })
   : null
 
 export function requireDb(res) {

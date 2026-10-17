@@ -4,6 +4,7 @@ import { api } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 import { useCatalog } from '../CatalogContext.jsx'
 import { WEEKDAYS, money } from '../i18n.js'
+import { ut } from '../uiText.js'
 
 export default function BookingModal({ open, onClose }) {
   const { t, locale, services, barbers } = useCatalog()
@@ -16,6 +17,7 @@ export default function BookingModal({ open, onClose }) {
   const [slots, setSlots] = useState([])
   const [done, setDone] = useState(null)
   const [err, setErr] = useState('')
+  const [tick, setTick] = useState(0)
 
   const days = useMemo(() => {
     const out = []
@@ -46,11 +48,11 @@ export default function BookingModal({ open, onClose }) {
 
   useEffect(() => {
     if (!day || !serviceId || !barberId) return
-    const date = day.toISOString().slice(0, 10)
+    const date = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
     api(`/api/slots?barberId=${barberId}&serviceId=${serviceId}&date=${date}`)
       .then((d) => setSlots(d.slots || []))
       .catch(() => setSlots([]))
-  }, [day, serviceId, barberId])
+  }, [day, serviceId, barberId, tick])
 
   if (!open) return null
 
@@ -71,6 +73,9 @@ export default function BookingModal({ open, onClose }) {
       setDone(data.booking)
     } catch (e) {
       setErr(e.message)
+      setSlot(null)
+      setStep(3)
+      setTick((n) => n + 1)
     }
   }
 
@@ -85,7 +90,7 @@ export default function BookingModal({ open, onClose }) {
             <div className="check">✓</div>
             <h3>{t('book.done')}</h3>
             <p className="muted" style={{ margin: '14px 0 24px', lineHeight: 1.7 }}>
-              {user?.full_name}, {day?.toLocaleDateString()} {slot?.time}
+              {user?.full_name}, {day?.toLocaleDateString()} {slot?.time} {ut(locale, 'tolerance')}
               <br />
               {money(done.price_uzs)} {t('currency')}
             </p>
@@ -109,7 +114,7 @@ export default function BookingModal({ open, onClose }) {
                   · {barber?.display_name || t('anyBarber')}
                 </>
               )}
-              {slot && <> · {slot.time}</>}
+              {slot && <> · {slot.time} {ut(locale, 'tolerance')}</>}
             </div>
             {step === 1 &&
               services.map((s) => (

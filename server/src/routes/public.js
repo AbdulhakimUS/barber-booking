@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { db, requireDb } from '../supabase.js'
-import { buildSlots } from '../slots.js'
+import { buildSlots, dayBounds, isDateStr } from '../slots.js'
 
 const router = Router()
 
@@ -24,31 +24,27 @@ router.get('/catalog', async (_req, res) => {
 router.get('/slots', async (req, res) => {
   if (!requireDb(res)) return
   const { barberId, serviceId, date } = req.query
-  if (!barberId || !serviceId || !date) return res.status(400).json({ error: 'barberId, serviceId, date required' })
+  if (!barberId || !serviceId || !isDateStr(date)) {
+    return res.status(400).json({ error: 'barberId, serviceId, date (YYYY-MM-DD) required' })
+  }
   const { data: service } = await db.from('services').select('*').eq('id', serviceId).maybeSingle()
   if (!service) return res.status(404).json({ error: 'Service not found' })
 
-  const day = new Date(`${date}T00:00:00`)
-  const from = new Date(day)
-  const to = new Date(day)
-  to.setDate(to.getDate() + 1)
+  const { data: active } = await db.from('barbers').select('id').eq('is_active', true)
+  const activeIds = (active || []).map((b) => b.id)
+  const barberIds = barberId === 'any' ? activeIds : activeIds.filter((id) => id === barberId)
+  if (!barberIds.length) return res.json({ slots: [] })
 
-  let barberIds = [barberId]
-  if (barberId === 'any') {
-    const { data: all } = await db.from('barbers').select('id').eq('is_active', true)
-    barberIds = (all || []).map((b) => b.id)
-  }
-
+  const { from, to } = dayBounds(date)
   const { data: bookings } = await db
     .from('bookings')
-    .select('barber_id, starts_at, status')
+    .select('barber_id, starts_at, ends_at')
     .in('barber_id', barberIds)
     .gte('starts_at', from.toISOString())
     .lt('starts_at', to.toISOString())
     .in('status', ['confirmed', 'completed'])
 
-  const taken = new Set((bookings || []).map((b) => new Date(b.starts_at).toISOString()))
-  res.json({ slots: buildSlots(day, service.duration_min, taken) })
+  res.json({ slots: buildSlots(date, service.duration_min, barberIds, bookings || []) })
 })
 
 export default router

@@ -1,3 +1,4 @@
+import ws from 'ws'
 import 'dotenv/config'
 import { createClient } from '@supabase/supabase-js'
 
@@ -8,7 +9,7 @@ if (!url || !key) {
   process.exit(1)
 }
 
-const db = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+const db = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false }, realtime: { transport: ws } })
 
 const email = (process.env.OWNER_EMAIL || 'amonovvv@ceh.uz').toLowerCase()
 const password = process.env.OWNER_PASSWORD || '13012010'

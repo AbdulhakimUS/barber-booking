@@ -8,6 +8,8 @@ import authRoutes from './routes/auth.js'
 import publicRoutes from './routes/public.js'
 import bookingRoutes from './routes/bookings.js'
 import adminRoutes from './routes/admin.js'
+import clientsRoutes from './routes/clients.js'
+import accountRoutes from './routes/account.js'
 
 const app = express()
 const port = process.env.PORT || 3001
@@ -19,8 +21,10 @@ app.use(optionalUser)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 app.use('/api/auth', authRoutes)
+app.use('/api/account', accountRoutes)
 app.use('/api', publicRoutes)
 app.use('/api/bookings', bookingRoutes)
+app.use('/api/admin/clients', clientsRoutes)
 app.use('/api/admin', adminRoutes)
 
 const dist = path.resolve(__dirname, '../../client/dist')
