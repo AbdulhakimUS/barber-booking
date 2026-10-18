@@ -3,10 +3,15 @@ services:
     name: ceh-barbershop
     runtime: node
     plan: free
-    buildCommand: npm install --prefix client && npm run build --prefix client && npm install --prefix server
+    buildCommand: npm install --include=dev --prefix client && npm run build --prefix client && npm install --prefix server
     startCommand: npm start --prefix server
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
-        value: "20"
-      - key: CLIENT_ORIGIN
-        value: https://ceh-barbershop.onrender.com
+        value: "22"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
