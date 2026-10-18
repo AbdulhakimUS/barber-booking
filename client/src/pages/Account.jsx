@@ -4,7 +4,7 @@ import { api } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 import { useCatalog } from '../CatalogContext.jsx'
 import { money } from '../i18n.js'
-import { fmtDate, ut } from '../uiText.js'
+import { fmtDate, fmtTime, ut } from '../uiText.js'
 
 export default function Account() {
   const { user, ready, refresh } = useAuth()
@@ -75,7 +75,7 @@ export default function Account() {
 
   const row = (b, showCancel) => (
     <div className="card" key={b.id}>
-      <b>{fmtDate(locale, b.starts_at)}</b>{showCancel && <span className="muted"> {x('tolerance')}</span>}
+      <b>{fmtDate(locale, b.starts_at)}–{fmtTime(locale, b.ends_at)}</b>{showCancel && <span className="muted"> {x('tolerance')}</span>}
       <p style={{ marginTop: 6 }}>
         {x('barber')}: {b.barbers?.display_name || '—'} · {t(`svc.${b.services?.slug}`)}
       </p>

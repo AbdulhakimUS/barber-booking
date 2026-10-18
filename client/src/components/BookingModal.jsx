@@ -4,7 +4,7 @@ import { api } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 import { useCatalog } from '../CatalogContext.jsx'
 import { WEEKDAYS, money } from '../i18n.js'
-import { ut } from '../uiText.js'
+import { DURATIONS, addMinutes, normalizeDuration, ut } from '../uiText.js'
 
 export default function BookingModal({ open, onClose }) {
   const { t, locale, services, barbers } = useCatalog()
@@ -18,6 +18,7 @@ export default function BookingModal({ open, onClose }) {
   const [done, setDone] = useState(null)
   const [err, setErr] = useState('')
   const [tick, setTick] = useState(0)
+  const [duration, setDuration] = useState(null)
 
   const days = useMemo(() => {
     const out = []
@@ -33,11 +34,13 @@ export default function BookingModal({ open, onClose }) {
 
   const service = services.find((s) => s.id === serviceId)
   const barber = barbers.find((b) => b.id === barberId)
+  const dur = duration ?? normalizeDuration(service?.duration_min ?? 60)
 
   useEffect(() => {
     if (!open) {
       setStep(1)
       setServiceId(null)
+      setDuration(null)
       setBarberId(null)
       setDay(null)
       setSlot(null)
@@ -49,10 +52,10 @@ export default function BookingModal({ open, onClose }) {
   useEffect(() => {
     if (!day || !serviceId || !barberId) return
     const date = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
-    api(`/api/slots?barberId=${barberId}&serviceId=${serviceId}&date=${date}`)
+    api(`/api/slots?barberId=${barberId}&serviceId=${serviceId}&duration=${dur}&date=${date}`)
       .then((d) => setSlots(d.slots || []))
       .catch(() => setSlots([]))
-  }, [day, serviceId, barberId, tick])
+  }, [day, serviceId, barberId, dur, tick])
 
   if (!open) return null
 
@@ -68,7 +71,7 @@ export default function BookingModal({ open, onClose }) {
     try {
       const data = await api('/api/bookings', {
         method: 'POST',
-        body: JSON.stringify({ serviceId, barberId, startsAt: slot.iso }),
+        body: JSON.stringify({ serviceId, barberId, startsAt: slot.iso, durationMin: dur }),
       })
       setDone(data.booking)
     } catch (e) {
@@ -90,7 +93,7 @@ export default function BookingModal({ open, onClose }) {
             <div className="check">✓</div>
             <h3>{t('book.done')}</h3>
             <p className="muted" style={{ margin: '14px 0 24px', lineHeight: 1.7 }}>
-              {user?.full_name}, {day?.toLocaleDateString()} {slot?.time} {ut(locale, 'tolerance')}
+              {user?.full_name}, {day?.toLocaleDateString()} {slot?.time}–{addMinutes(slot?.time, dur)} {ut(locale, 'tolerance')}
               <br />
               {money(done.price_uzs)} {t('currency')}
             </p>
@@ -114,14 +117,18 @@ export default function BookingModal({ open, onClose }) {
                   · {barber?.display_name || t('anyBarber')}
                 </>
               )}
-              {slot && <> · {slot.time} {ut(locale, 'tolerance')}</>}
+              {slot && <> · {slot.time}–{addMinutes(slot.time, dur)} {ut(locale, 'tolerance')}</>}
             </div>
             {step === 1 &&
               services.map((s) => (
                 <button
                   key={s.id}
                   className={`opt ${serviceId === s.id ? 'sel' : ''}`}
-                  onClick={() => setServiceId(s.id)}
+                  onClick={() => {
+                    setServiceId(s.id)
+                    setDuration(null)
+                    setSlot(null)
+                  }}
                 >
                   {t(`svc.${s.slug}`)} <b>{money(s.price_uzs)}</b>
                 </button>
@@ -144,6 +151,24 @@ export default function BookingModal({ open, onClose }) {
             )}
             {step === 3 && (
               <>
+                <div className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
+                  {ut(locale, 'duration')}
+                </div>
+                <div className="days" style={{ marginBottom: 14 }}>
+                  {DURATIONS.map((m) => (
+                    <button
+                      key={m}
+                      className={`day ${dur === m ? 'sel' : ''}`}
+                      onClick={() => {
+                        setDuration(m)
+                        setSlot(null)
+                      }}
+                    >
+                      <b>{m}</b>
+                      <small>{ut(locale, 'min')}</small>
+                    </button>
+                  ))}
+                </div>
                 <div className="days">
                   {days.map((d, i) => (
                     <button

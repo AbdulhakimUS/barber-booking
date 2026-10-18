@@ -63,3 +63,21 @@ export function validateStart(startsAt, durationMin) {
   if (mins < from * 60 || mins + durationMin > to * 60) return 'Это время вне рабочих часов'
   return null
 }
+
+export const MIN_DURATION = 30
+export const MAX_DURATION = 90
+export const DURATION_STEP = 15
+
+// Длительность по умолчанию: время услуги, подогнанное под диапазон 30–90 минут
+export function normalizeDuration(n) {
+  const v = Math.round(Number(n || 60) / DURATION_STEP) * DURATION_STEP
+  return Math.min(MAX_DURATION, Math.max(MIN_DURATION, v))
+}
+
+// Длительность в минутах или null, если значение неверное (30–90, шаг 15)
+export function parseDuration(value, fallback) {
+  const raw = value == null || value === '' ? fallback : value
+  const n = Number(raw)
+  if (!Number.isInteger(n) || n < MIN_DURATION || n > MAX_DURATION || n % DURATION_STEP !== 0) return null
+  return n
+}

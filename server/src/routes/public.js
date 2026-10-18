@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { db, requireDb } from '../supabase.js'
-import { buildSlots, dayBounds, isDateStr } from '../slots.js'
+import { buildSlots, dayBounds, isDateStr, normalizeDuration, parseDuration } from '../slots.js'
 
 const router = Router()
 
@@ -29,6 +29,8 @@ router.get('/slots', async (req, res) => {
   }
   const { data: service } = await db.from('services').select('*').eq('id', serviceId).maybeSingle()
   if (!service) return res.status(404).json({ error: 'Service not found' })
+  const duration = parseDuration(req.query.duration, normalizeDuration(service.duration_min))
+  if (!duration) return res.status(400).json({ error: 'Длительность: от 30 до 90 минут, шаг 15' })
 
   const { data: active } = await db.from('barbers').select('id').eq('is_active', true)
   const activeIds = (active || []).map((b) => b.id)
@@ -44,7 +46,7 @@ router.get('/slots', async (req, res) => {
     .lt('starts_at', to.toISOString())
     .in('status', ['confirmed', 'completed'])
 
-  res.json({ slots: buildSlots(date, service.duration_min, barberIds, bookings || []) })
+  res.json({ slots: buildSlots(date, duration, barberIds, bookings || []) })
 })
 
 export default router

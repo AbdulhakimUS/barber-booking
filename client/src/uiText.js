@@ -20,6 +20,8 @@ const D = {
     barber: 'Барбер',
     'status.confirmed': 'Подтверждена',
     tolerance: '(±15 минут)',
+    duration: 'Сколько времени',
+    min: 'мин',
     'status.completed': 'Выполнена',
     'status.cancelled': 'Отменена',
     'status.no_show': 'Не пришёл',
@@ -45,6 +47,8 @@ const D = {
     barber: 'Barber',
     'status.confirmed': 'Tasdiqlangan',
     tolerance: '(±15 daqiqa)',
+    duration: 'Davomiyligi',
+    min: 'daq',
     'status.completed': 'Bajarilgan',
     'status.cancelled': 'Bekor qilingan',
     'status.no_show': 'Kelmadi',
@@ -70,6 +74,8 @@ const D = {
     barber: 'Barber',
     'status.confirmed': 'Confirmed',
     tolerance: '(±15 min)',
+    duration: 'Duration',
+    min: 'min',
     'status.completed': 'Completed',
     'status.cancelled': 'Cancelled',
     'status.no_show': 'No-show',
@@ -84,4 +90,22 @@ const DATE_LOCALE = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-GB' }
 
 export function fmtDate(locale, iso) {
   return new Date(iso).toLocaleString(DATE_LOCALE[locale] || 'ru-RU', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+export const DURATIONS = [30, 45, 60, 75, 90]
+
+export function normalizeDuration(n) {
+  const v = Math.round(Number(n || 60) / 15) * 15
+  return Math.min(90, Math.max(30, v))
+}
+
+export function addMinutes(time, mins) {
+  if (!time) return ''
+  const [h, m] = time.split(':').map(Number)
+  const total = h * 60 + m + mins
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
+export function fmtTime(locale, iso) {
+  return new Date(iso).toLocaleTimeString(DATE_LOCALE[locale] || 'ru-RU', { hour: '2-digit', minute: '2-digit' })
 }

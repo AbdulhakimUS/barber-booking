@@ -1,23 +1,25 @@
 import { Router } from 'express'
 import { db, requireDb } from '../supabase.js'
 import { requireUser } from '../middleware/auth.js'
-import { validateStart } from '../slots.js'
+import { normalizeDuration, parseDuration, validateStart } from '../slots.js'
 
 const router = Router()
 const BUSY = ['confirmed', 'completed']
 
 router.post('/', requireUser, async (req, res) => {
   if (!requireDb(res)) return
-  const { serviceId, barberId, startsAt } = req.body || {}
+  const { serviceId, barberId, startsAt, durationMin } = req.body || {}
   if (!serviceId || !barberId || !startsAt) return res.status(400).json({ error: 'Missing fields' })
 
   const { data: service } = await db.from('services').select('*').eq('id', serviceId).maybeSingle()
   if (!service || !service.is_active) return res.status(404).json({ error: 'Service not found' })
 
-  const bad = validateStart(startsAt, service.duration_min)
+  const duration = parseDuration(durationMin, normalizeDuration(service.duration_min))
+  if (!duration) return res.status(400).json({ error: 'Длительность: от 30 до 90 минут, шаг 15' })
+  const bad = validateStart(startsAt, duration)
   if (bad) return res.status(400).json({ error: bad })
   const start = new Date(startsAt)
-  const end = new Date(start.getTime() + service.duration_min * 60 * 1000)
+  const end = new Date(start.getTime() + duration * 60 * 1000)
 
   const { data: barbers } = await db.from('barbers').select('id').eq('is_active', true).order('sort_order')
   const activeIds = (barbers || []).map((b) => b.id)
