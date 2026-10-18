@@ -1,6 +1,19 @@
 [build]
-  command = "npm install --prefix client && npm run build --prefix client"
+  command = "npm install --include=dev --prefix client && npm run build --prefix client && npm install --prefix server"
   publish = "client/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/*"
